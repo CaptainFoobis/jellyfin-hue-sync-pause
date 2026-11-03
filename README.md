@@ -61,7 +61,7 @@ This build targets Jellyfin 12.4 (`net10.0`, `targetAbi` `12.4.0.0`). A four-par
 
 ## Build
 
-The .NET 10 SDK is required.
+The .NET 10 SDK is required only when compiling this plugin. Unraid and Windows installs use the zip in the Install section.
 
 ```powershell
 dotnet test "Jellyfin.Plugin.HueSync.slnx"
