@@ -75,6 +75,6 @@ dotnet build "src/Jellyfin.Plugin.HueSync/Jellyfin.Plugin.HueSync.csproj" -c Rel
 
 ## Limits
 
-The pause and resume sequence was checked with unit tests and stand-in Hue clients. It has not been verified against a Hue Sync device or a Hue Bridge.
+The pause and resume sequence has been tested on my Hue Sync box. Unit tests and stand-in Hue clients cover the same sequence.
 
 License: GPL-2.0-only.
