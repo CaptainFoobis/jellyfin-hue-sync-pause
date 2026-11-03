@@ -1,0 +1,11 @@
+{
+  "guid": "7c4e1a2b-9f63-4d18-b5a0-2e8c6f91d4ab",
+  "name": "Hue Sync Pause",
+  "description": "While Hue Sync is on, pause raises the entertainment lights and play resumes sync.",
+  "overview": "Raise Hue lights while Jellyfin is paused, then resume Hue Sync.",
+  "owner": "CaptainFoobis",
+  "category": "General",
+  "targetAbi": "12.4.0.0",
+  "version": "1.0.0.0",
+  "changelog": "Initial release for Jellyfin 12.4."
+}

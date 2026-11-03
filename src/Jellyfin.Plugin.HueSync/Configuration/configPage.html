@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Hue Sync Pause</title>
+</head>
+<body>
+    <div id="HueSyncConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox,emby-select">
+        <div data-role="content">
+            <div class="content-primary">
+                <div class="verticalSection">
+                    <p>When Hue Sync is already running, pausing Jellyfin switches the sync device to passthrough and raises its entertainment lights. Play and stop turn sync back on. The sync device keeps control of the lights while it is streaming, so this plugin steps out of sync before it sets a brightness.</p>
+                    <p class="fieldDescription">Certificates for the addresses you enter are not checked. Use the addresses of your own Hue Sync device and Hue Bridge. On a shared server, set the living-room device name so other sessions do not change the lights.</p>
+                </div>
+                <form id="HueSyncConfigForm">
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input id="enabled" type="checkbox" is="emby-checkbox" />
+                            <span>Enable pause lighting</span>
+                        </label>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="syncHost">Hue Sync address</label>
+                        <input id="syncHost" is="emby-input" type="text" autocomplete="off" />
+                        <div class="fieldDescription">IP address or hostname of the Hue Sync box or Play HDMI sync device. Stop sync before pairing. After you click Pair Hue Sync, hold the button on the box for about 3 seconds until the light flashes green, then release it. Holding on after the green flash can reset the box and remove it from the Hue app.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="bridgeHost">Hue Bridge address</label>
+                        <input id="bridgeHost" is="emby-input" type="text" autocomplete="off" />
+                        <div class="fieldDescription">IP address or hostname of the Hue Bridge. Press the link button while pairing.</div>
+                    </div>
+                    <div>
+                        <button is="emby-button" type="button" id="discoverButton" class="raised emby-button">
+                            <span>Find devices</span>
+                        </button>
+                        <div class="fieldDescription">Settings page 1.0.0 auth. Find devices searches from the Jellyfin server, then lists anything that answers.</div>
+                    </div>
+                    <div style="margin-top: 1em;">
+                        <div id="syncPairingState" class="fieldDescription">Hue Sync: Checking pairing.</div>
+                        <button is="emby-button" type="button" id="pairSyncButton" class="raised emby-button" style="display: none;">
+                            <span>Pair Hue Sync</span>
+                        </button>
+                        <button is="emby-button" type="button" id="forgetSyncButton" class="raised emby-button" style="display: none;">
+                            <span>Unpair Hue Sync</span>
+                        </button>
+                    </div>
+                    <div style="margin-top: 1em;">
+                        <div id="bridgePairingState" class="fieldDescription">Hue Bridge: Checking pairing.</div>
+                        <button is="emby-button" type="button" id="pairBridgeButton" class="raised emby-button" style="display: none;">
+                            <span>Pair Hue Bridge</span>
+                        </button>
+                        <button is="emby-button" type="button" id="forgetBridgeButton" class="raised emby-button" style="display: none;">
+                            <span>Unpair Hue Bridge</span>
+                        </button>
+                    </div>
+                    <div class="fieldDescription">Unpair clears the saved address and pairing. Brightness, color, the entertainment area, and the Jellyfin user and device filters stay.</div>
+                    <div id="deviceList" class="verticalSection"></div>
+                    <div id="hueMessage" class="fieldDescription"></div>
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="areaId">Entertainment area</label>
+                        <div style="display: flex; gap: 0.5em; align-items: center; flex-wrap: wrap;">
+                            <select id="areaId" is="emby-select" class="emby-select" style="flex: 1 1 16em;"></select>
+                            <button is="emby-button" type="button" id="refreshAreasButton" class="raised emby-button">
+                                <span>Refresh areas</span>
+                            </button>
+                        </div>
+                        <div class="fieldDescription">Leave this on the Hue Sync selection unless you want one fixed area. Refresh asks the paired Hue Bridge for its entertainment areas again.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="pauseBrightness">Pause brightness (1-100)</label>
+                        <input id="pauseBrightness" is="emby-input" type="number" min="1" max="100" step="1" />
+                        <div class="fieldDescription">The lights rise to this level while playback is paused. The default is 15 percent.</div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input id="useWarmWhite" type="checkbox" is="emby-checkbox" />
+                            <span>Use a warm white while paused</span>
+                        </label>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="warmWhiteMirek">Warm white (mirek)</label>
+                        <input id="warmWhiteMirek" is="emby-input" type="number" min="153" max="500" step="1" />
+                        <div class="fieldDescription">153 is the coolest white and 500 is the warmest. 370 is about 2700K.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="deviceNames">Jellyfin device names</label>
+                        <input id="deviceNames" is="emby-input" type="text" />
+                        <div class="fieldDescription">Comma-separated device or client names. Leave this empty to watch every session. On a shared server, enter the living-room device name.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="userNames">Jellyfin usernames</label>
+                        <input id="userNames" is="emby-input" type="text" />
+                        <div class="fieldDescription">Comma-separated usernames. Leave this empty to watch every user. When both fields are set, a session must match a device and a username.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="pauseDelay">Pause delay (milliseconds)</label>
+                        <input id="pauseDelay" is="emby-input" type="number" min="0" max="10000" step="50" />
+                        <div class="fieldDescription">Short pauses inside this window do not change the lights. The default is 700.</div>
+                    </div>
+                    <h2>Status</h2>
+                    <div id="statusText" class="fieldDescription" style="white-space: pre-line;"></div>
+                    <div>
+                        <button is="emby-button" type="button" id="previewPauseButton" class="raised emby-button">
+                            <span>Preview pause</span>
+                        </button>
+                        <button is="emby-button" type="button" id="previewResumeButton" class="raised emby-button">
+                            <span>Preview resume</span>
+                        </button>
+                    </div>
+                    <div class="fieldDescription">Preview pause runs immediately. A watched session that is still playing turns sync back on at its next progress update.</div>
+                    <br />
+                    <div>
+                        <button is="emby-button" type="submit" id="saveButton" class="raised button-submit block emby-button">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script type="text/javascript">
+            var HueSyncConfig = {
+                pluginUniqueId: '7c4e1a2b-9f63-4d18-b5a0-2e8c6f91d4ab'
+            };
+
+            function hueText(id) {
+                var element = document.getElementById(id);
+                return element ? element.value.trim() : '';
+            }
+
+            function hueNumber(id, fallback) {
+                var value = Number(document.getElementById(id).value);
+                return Number.isFinite(value) ? Math.round(value) : fallback;
+            }
+
+            function hueField(data, camel, pascal) {
+                if (!data) {
+                    return undefined;
+                }
+                if (Object.prototype.hasOwnProperty.call(data, camel)) {
+                    return data[camel];
+                }
+                return data[pascal];
+            }
+
+            function hueMessage(text) {
+                document.getElementById('hueMessage').textContent = text || '';
+            }
+
+            function hueShow(id, visible) {
+                var element = document.getElementById(id);
+                if (element) {
+                    element.style.display = visible ? '' : 'none';
+                }
+            }
+
+            function huePairedFlag(status, camel, pascal) {
+                if (!status) {
+                    return null;
+                }
+                if (Object.prototype.hasOwnProperty.call(status, camel)) {
+                    return !!status[camel];
+                }
+                if (Object.prototype.hasOwnProperty.call(status, pascal)) {
+                    return !!status[pascal];
+                }
+                return null;
+            }
+
+            function hueSetPairing(kind, paired) {
+                var sync = kind === 'sync';
+                var state = document.getElementById(sync ? 'syncPairingState' : 'bridgePairingState');
+                var name = sync ? 'Hue Sync' : 'Hue Bridge';
+                if (!state) {
+                    return;
+                }
+
+                if (paired === true) {
+                    state.textContent = name + ': Paired';
+                    hueShow(sync ? 'pairSyncButton' : 'pairBridgeButton', false);
+                    hueShow(sync ? 'forgetSyncButton' : 'forgetBridgeButton', true);
+                } else if (paired === false) {
+                    state.textContent = name + ': Not paired';
+                    hueShow(sync ? 'pairSyncButton' : 'pairBridgeButton', true);
+                    hueShow(sync ? 'forgetSyncButton' : 'forgetBridgeButton', false);
+                } else {
+                    state.textContent = name + ': Pairing status unknown';
+                    hueShow(sync ? 'pairSyncButton' : 'pairBridgeButton', true);
+                    hueShow(sync ? 'forgetSyncButton' : 'forgetBridgeButton', true);
+                }
+            }
+
+            function hueErrorMessage(error) {
+                if (error && typeof error.json === 'function') {
+                    return error.json().catch(function () {
+                        return {};
+                    }).then(function (data) {
+                        throw new Error(hueField(data, 'error', 'Error') || hueField(data, 'title', 'Title') || 'Request failed');
+                    });
+                }
+
+                var body = error && (error.responseText || error.response);
+                if (body && typeof body === 'string') {
+                    try {
+                        var parsed = JSON.parse(body);
+                        return Promise.reject(new Error(hueField(parsed, 'error', 'Error') || 'Request failed'));
+                    } catch (parseError) {
+                        return Promise.reject(new Error('Request failed'));
+                    }
+                }
+
+                return Promise.reject(new Error((error && error.message) || 'Request failed'));
+            }
+
+            function hueEncode(value) {
+                return encodeURIComponent(value || '');
+            }
+
+            function hueHeaderHasToken(value) {
+                return !!value && value.indexOf('Token="') !== -1 && value.indexOf('Token=""') === -1;
+            }
+
+            function hueDashboardToken() {
+                if (!window.ApiClient) {
+                    return '';
+                }
+
+                if (typeof ApiClient.accessToken === 'function') {
+                    var token = ApiClient.accessToken();
+                    if (token) {
+                        return token;
+                    }
+                }
+
+                if (typeof ApiClient.serverInfo === 'function') {
+                    var info = ApiClient.serverInfo() || {};
+                    return info.AccessToken || info.accessToken || '';
+                }
+
+                return '';
+            }
+
+            function hueAuthorization() {
+                if (window.ApiClient && typeof ApiClient.getAuthorizationHeader === 'function') {
+                    try {
+                        var header = ApiClient.getAuthorizationHeader();
+                        if (hueHeaderHasToken(header)) {
+                            return header;
+                        }
+                    } catch (headerError) {
+                        // The dashboard client can expose a different function with this name.
+                    }
+                }
+
+                var token = hueDashboardToken();
+                var client = window.ApiClient && typeof ApiClient.appName === 'function' ? ApiClient.appName() : 'Jellyfin Web';
+                var device = window.ApiClient && typeof ApiClient.deviceName === 'function' ? ApiClient.deviceName() : 'Browser';
+                var deviceId = window.ApiClient && typeof ApiClient.deviceId === 'function' ? ApiClient.deviceId() : 'hue-sync-pause';
+                var version = window.ApiClient && typeof ApiClient.appVersion === 'function' ? ApiClient.appVersion() : '12.0.0';
+                return 'MediaBrowser Client="' + hueEncode(client) + '", Device="' + hueEncode(device) + '", DeviceId="' + hueEncode(deviceId) + '", Version="' + hueEncode(version) + '", Token="' + hueEncode(token) + '"';
+            }
+
+            function hueFailureText(response, data, text) {
+                var message = hueField(data, 'error', 'Error')
+                    || hueField(data, 'message', 'Message')
+                    || hueField(data, 'title', 'Title')
+                    || hueField(data, 'detail', 'Detail');
+                if (message) {
+                    return message;
+                }
+                if (response.status === 401 || response.status === 403) {
+                    return 'Jellyfin refused the request (' + response.status + '). Reload the dashboard and try again.';
+                }
+                if (text && text.length < 300) {
+                    return 'Request failed (' + response.status + '): ' + text;
+                }
+                return 'Request failed (' + response.status + ').';
+            }
+
+            function hueApi(method, path, body) {
+                var headers = { 'Accept': 'application/json' };
+                if (window.ApiClient && typeof ApiClient.setRequestHeaders === 'function') {
+                    ApiClient.setRequestHeaders(headers);
+                }
+
+                if (!hueHeaderHasToken(headers.Authorization || headers.authorization)) {
+                    headers.Authorization = hueAuthorization();
+                }
+
+                if (!hueHeaderHasToken(headers.Authorization || headers.authorization)) {
+                    return Promise.reject(new Error('The dashboard session has no access token. Reload this page and sign in again.'));
+                }
+
+                var options = { method: method, headers: headers, credentials: 'same-origin' };
+                if (body !== undefined) {
+                    headers['Content-Type'] = 'application/json';
+                    options.body = JSON.stringify(body);
+                }
+
+                return fetch(ApiClient.getUrl(path), options).then(function (response) {
+                    return response.text().then(function (text) {
+                        var data = {};
+                        if (text) {
+                            try {
+                                data = JSON.parse(text);
+                            } catch (parseError) {
+                                data = {};
+                            }
+                        }
+
+                        if (!response.ok) {
+                            throw new Error(hueFailureText(response, data, text));
+                        }
+
+                        return data;
+                    });
+                });
+            }
+
+            function hueRenderAreas(areas, selectedId) {
+                var select = document.getElementById('areaId');
+                var current = select.value || selectedId || '';
+                select.replaceChildren();
+                var automatic = document.createElement('option');
+                automatic.value = '';
+                automatic.textContent = 'Use the area selected on Hue Sync';
+                select.appendChild(automatic);
+                (areas || []).forEach(function (area) {
+                    var option = document.createElement('option');
+                    option.value = hueField(area, 'id', 'Id') || '';
+                    option.textContent = hueField(area, 'name', 'Name') || option.value;
+                    select.appendChild(option);
+                });
+                if (current && !Array.prototype.some.call(select.options, function (option) { return option.value === current; })) {
+                    var extra = document.createElement('option');
+                    extra.value = current;
+                    extra.textContent = current;
+                    select.appendChild(extra);
+                }
+                select.value = current;
+            }
+
+            function hueRenderStatus(status, selectedId) {
+                var lines = [];
+                var text = hueField(status, 'status', 'Status');
+                if (text) {
+                    lines.push(text);
+                }
+                var mode = hueField(status, 'syncMode', 'SyncMode');
+                if (mode) {
+                    var active = hueField(status, 'syncActive', 'SyncActive');
+                    lines.push('Sync mode: ' + mode + (active ? ' (active)' : ' (not active)'));
+                }
+                if (hueField(status, 'suspended', 'Suspended')) {
+                    lines.push('Pause lighting has switched Hue Sync to passthrough.');
+                }
+                hueSetPairing('sync', huePairedFlag(status, 'syncPaired', 'SyncPaired'));
+                hueSetPairing('bridge', huePairedFlag(status, 'bridgePaired', 'BridgePaired'));
+                var message = hueField(status, 'message', 'Message');
+                if (message) {
+                    lines.push(message);
+                }
+                document.getElementById('statusText').textContent = lines.join('\n');
+                hueRenderAreas(hueField(status, 'areas', 'Areas') || [], selectedId);
+            }
+
+            function hueRefreshStatus(selectedId) {
+                return hueApi('GET', 'HueSync/Status').then(function (status) {
+                    hueRenderStatus(status, selectedId || hueText('areaId'));
+                }).catch(function (error) {
+                    document.getElementById('statusText').textContent = error.message;
+                    hueSetPairing('sync', null);
+                    hueSetPairing('bridge', null);
+                });
+            }
+
+            function hueLoad() {
+                Dashboard.showLoadingMsg();
+                document.getElementById('statusText').textContent = 'Loading saved settings.';
+                ApiClient.getPluginConfiguration(HueSyncConfig.pluginUniqueId).then(function (config) {
+                    document.getElementById('enabled').checked = !!config.Enabled;
+                    document.getElementById('syncHost').value = config.SyncHost || '';
+                    document.getElementById('bridgeHost').value = config.BridgeHost || '';
+                    document.getElementById('pauseBrightness').value = config.PauseBrightness;
+                    document.getElementById('useWarmWhite').checked = !!config.UseWarmWhite;
+                    document.getElementById('warmWhiteMirek').value = config.WarmWhiteMirek;
+                    document.getElementById('deviceNames').value = config.DeviceNames || '';
+                    document.getElementById('userNames').value = config.UserNames || '';
+                    document.getElementById('pauseDelay').value = config.PauseDelayMs;
+                    hueRenderAreas([], config.EntertainmentAreaId || '');
+                    document.getElementById('statusText').textContent = 'Checking the Hue devices.';
+                    Dashboard.hideLoadingMsg();
+                    hueRefreshStatus(config.EntertainmentAreaId || '');
+                }, function (error) {
+                    Dashboard.hideLoadingMsg();
+                    hueMessage((error && error.message) || 'Could not load the plugin settings.');
+                });
+            }
+
+            function hueRenderDevices(devices) {
+                var list = document.getElementById('deviceList');
+                list.replaceChildren();
+                if (!devices || !devices.length) {
+                    var empty = document.createElement('div');
+                    empty.className = 'fieldDescription';
+                    empty.textContent = 'No Hue devices responded. Enter the IP address shown in the Hue app.';
+                    list.appendChild(empty);
+                    return;
+                }
+
+                devices.forEach(function (device) {
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.setAttribute('is', 'emby-button');
+                    button.className = 'raised emby-button';
+                    var kind = (hueField(device, 'kind', 'Kind') || '').toLowerCase();
+                    var host = hueField(device, 'host', 'Host') || '';
+                    var name = hueField(device, 'name', 'Name') || 'Hue device';
+                    button.textContent = name + ' — ' + (kind === 'bridge' ? 'bridge' : 'sync') + ' — ' + host;
+                    button.addEventListener('click', function () {
+                        document.getElementById(kind === 'bridge' ? 'bridgeHost' : 'syncHost').value = host;
+                    });
+                    list.appendChild(button);
+                });
+            }
+
+            document.querySelector('#HueSyncConfigPage').addEventListener('pageshow', function () {
+                hueLoad();
+            });
+
+            document.querySelector('#refreshAreasButton').addEventListener('click', function () {
+                var button = document.getElementById('refreshAreasButton');
+                button.disabled = true;
+                hueMessage('Loading entertainment areas from the Hue Bridge.');
+                hueApi('GET', 'HueSync/Areas').then(function (areas) {
+                    hueRenderAreas(areas, hueText('areaId'));
+                    var count = Array.isArray(areas) ? areas.length : 0;
+                    hueMessage(count === 1 ? 'Found 1 entertainment area.' : 'Found ' + count + ' entertainment areas.');
+                }).catch(function (error) {
+                    hueMessage(error.message);
+                }).then(function () {
+                    button.disabled = false;
+                });
+            });
+
+            document.querySelector('#discoverButton').addEventListener('click', function () {
+                var button = document.getElementById('discoverButton');
+                button.disabled = true;
+                hueMessage('Looking for Hue devices on the local network.');
+                hueApi('GET', 'HueSync/Discover').then(function (devices) {
+                    hueRenderDevices(devices);
+                    hueMessage('');
+                }).catch(function (error) {
+                    hueMessage(error.message);
+                }).then(function () {
+                    button.disabled = false;
+                });
+            });
+
+            function huePair(buttonId, path, hostId, waitingText) {
+                document.getElementById(buttonId).addEventListener('click', function (event) {
+                    if (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+
+                    var button = document.getElementById(buttonId);
+                    var host = hueText(hostId);
+                    if (!host) {
+                        hueMessage('Enter an address first.');
+                        return;
+                    }
+
+                    button.disabled = true;
+                    hueMessage(waitingText);
+                    hueApi('POST', path, { Host: host }).then(function (result) {
+                        hueMessage(hueField(result, 'message', 'Message') || 'Paired.');
+                        var pairedHost = hueField(result, 'host', 'Host');
+                        if (pairedHost) {
+                            document.getElementById(hostId).value = pairedHost;
+                        }
+                        hueRefreshStatus(hueText('areaId'));
+                    }).catch(function (error) {
+                        hueMessage(error.message);
+                    }).then(function () {
+                        button.disabled = false;
+                    });
+                });
+            }
+
+            huePair('pairSyncButton', 'HueSync/PairSync', 'syncHost', 'You have about 90 seconds. Hold the button on the Hue Sync box until the light flashes green, then release it. A red flash after the green one is normal.');
+            huePair('pairBridgeButton', 'HueSync/PairBridge', 'bridgeHost', 'Press the link button on the Hue Bridge. This can take about 30 seconds.');
+
+            function hueForget(buttonId, path, hostId, confirmText) {
+                document.getElementById(buttonId).addEventListener('click', function () {
+                    if (!window.confirm(confirmText)) {
+                        return;
+                    }
+
+                    var button = document.getElementById(buttonId);
+                    button.disabled = true;
+                    hueApi('POST', path).then(function (result) {
+                        document.getElementById(hostId).value = '';
+                        var message = hueField(result, 'status', 'Status') || 'Removed.';
+                        hueMessage(message);
+                        document.getElementById('statusText').textContent = message;
+                        hueRefreshStatus(hueText('areaId'));
+                    }).catch(function (error) {
+                        hueMessage(error.message);
+                    }).then(function () {
+                        button.disabled = false;
+                    });
+                });
+            }
+
+            hueForget('forgetSyncButton', 'HueSync/ForgetSync', 'syncHost', 'Unpair Hue Sync and clear its saved address?');
+            hueForget('forgetBridgeButton', 'HueSync/ForgetBridge', 'bridgeHost', 'Unpair the Hue Bridge and clear its saved address?');
+
+            document.querySelector('#previewPauseButton').addEventListener('click', function () {
+                hueApi('POST', 'HueSync/Suspend').then(function (result) {
+                    document.getElementById('statusText').textContent = hueField(result, 'status', 'Status') || '';
+                    hueRefreshStatus(hueText('areaId'));
+                }).catch(function (error) {
+                    hueMessage(error.message);
+                });
+            });
+
+            document.querySelector('#previewResumeButton').addEventListener('click', function () {
+                hueApi('POST', 'HueSync/Resume').then(function (result) {
+                    document.getElementById('statusText').textContent = hueField(result, 'status', 'Status') || '';
+                    hueRefreshStatus(hueText('areaId'));
+                }).catch(function (error) {
+                    hueMessage(error.message);
+                });
+            });
+
+            document.querySelector('#HueSyncConfigForm').addEventListener('submit', function (event) {
+                event.preventDefault();
+                if (!event.submitter || event.submitter.id !== 'saveButton') {
+                    return;
+                }
+
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(HueSyncConfig.pluginUniqueId).then(function (config) {
+                    var syncHost = hueText('syncHost');
+                    var bridgeHost = hueText('bridgeHost');
+                    if (syncHost.toLowerCase() !== (config.SyncHost || '').trim().toLowerCase()) {
+                        config.SyncAccessToken = '';
+                        config.SyncRegistrationId = '';
+                    }
+                    if (bridgeHost.toLowerCase() !== (config.BridgeHost || '').trim().toLowerCase()) {
+                        config.BridgeApplicationKey = '';
+                    }
+
+                    config.Enabled = document.getElementById('enabled').checked;
+                    config.SyncHost = syncHost;
+                    config.BridgeHost = bridgeHost;
+                    config.EntertainmentAreaId = hueText('areaId');
+                    config.PauseBrightness = hueNumber('pauseBrightness', 15);
+                    config.UseWarmWhite = document.getElementById('useWarmWhite').checked;
+                    config.WarmWhiteMirek = hueNumber('warmWhiteMirek', 370);
+                    config.DeviceNames = hueText('deviceNames');
+                    config.UserNames = hueText('userNames');
+                    config.PauseDelayMs = hueNumber('pauseDelay', 700);
+                    return ApiClient.updatePluginConfiguration(HueSyncConfig.pluginUniqueId, config);
+                }).then(function (result) {
+                    Dashboard.processPluginConfigurationUpdateResult(result);
+                    hueRefreshStatus(hueText('areaId'));
+                }).catch(function (error) {
+                    Dashboard.hideLoadingMsg();
+                    hueMessage(error.message || 'Could not save the plugin settings.');
+                });
+                return false;
+            });
+        </script>
+    </div>
+</body>
+</html>

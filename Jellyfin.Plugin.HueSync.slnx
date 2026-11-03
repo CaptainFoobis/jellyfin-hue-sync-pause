@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Jellyfin.Plugin.HueSync/Jellyfin.Plugin.HueSync.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Jellyfin.Plugin.HueSync.Tests/Jellyfin.Plugin.HueSync.Tests.csproj" />
+  </Folder>
+</Solution>

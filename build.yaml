@@ -1,0 +1,17 @@
+---
+name: "Hue Sync Pause"
+guid: "7c4e1a2b-9f63-4d18-b5a0-2e8c6f91d4ab"
+version: "1.0.0.0"
+targetAbi: "12.4.0.0"
+framework: "net10.0"
+owner: "CaptainFoobis"
+overview: "Raise Hue lights while Jellyfin is paused, then resume Hue Sync."
+description: >
+  When playback pauses and a Hue Sync device is in sync mode, switch that device
+  to passthrough and raise its entertainment lights to a chosen brightness.
+  Play and stop put the device back into the sync mode it was using.
+category: "General"
+artifacts:
+  - "Jellyfin.Plugin.HueSync.dll"
+changelog: >
+  Initial release for Jellyfin 12.4.
