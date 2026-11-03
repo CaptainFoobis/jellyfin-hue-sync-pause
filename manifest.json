@@ -8,11 +8,19 @@
     "category": "General",
     "versions": [
       {
+        "version": "1.0.1.0",
+        "changelog": "Release builds no longer embed the local project path.",
+        "targetAbi": "12.4.0.0",
+        "sourceUrl": "https://github.com/CaptainFoobis/jellyfin-hue-sync-pause/releases/download/v1.0.1.0/HueSyncPause.zip",
+        "checksum": "c4af5ce4caf13c62181a7c115983a522",
+        "timestamp": "2026-11-03T08:39:23Z"
+      },
+      {
         "version": "1.0.0.0",
         "changelog": "Initial release for Jellyfin 12.4.",
         "targetAbi": "12.4.0.0",
         "sourceUrl": "https://github.com/CaptainFoobis/jellyfin-hue-sync-pause/releases/download/v1.0.0.0/HueSyncPause.zip",
-        "checksum": "772bd8731f7e7a1b6e4530de50e6d1ce",
+        "checksum": "84395efe48f13ca6f8c94952f6e37482",
         "timestamp": "2026-11-03T06:38:15Z"
       }
     ]

@@ -5,12 +5,17 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Jellyfin.Plugin.HueSync</RootNamespace>
     <AssemblyName>Jellyfin.Plugin.HueSync</AssemblyName>
-    <Version>1.0.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.0.1.0</Version>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
     <Authors>Hue Sync Pause</Authors>
     <Description>Raises Hue entertainment lights to a set level while Jellyfin is paused, then resumes Hue Sync on play.</Description>
     <PackageLicenseExpression>GPL-2.0-only</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
 
   <ItemGroup>

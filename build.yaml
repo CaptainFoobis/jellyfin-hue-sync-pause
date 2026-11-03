@@ -1,7 +1,7 @@
 ---
 name: "Hue Sync Pause"
 guid: "7c4e1a2b-9f63-4d18-b5a0-2e8c6f91d4ab"
-version: "1.0.0.0"
+version: "1.0.1.0"
 targetAbi: "12.4.0.0"
 framework: "net10.0"
 owner: "CaptainFoobis"
@@ -14,4 +14,4 @@ category: "General"
 artifacts:
   - "Jellyfin.Plugin.HueSync.dll"
 changelog: >
-  Initial release for Jellyfin 12.4.
+  Release builds no longer embed the local project path.

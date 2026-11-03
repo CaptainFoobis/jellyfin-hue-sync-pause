@@ -6,6 +6,6 @@
   "owner": "CaptainFoobis",
   "category": "General",
   "targetAbi": "12.4.0.0",
-  "version": "1.0.0.0",
-  "changelog": "Initial release for Jellyfin 12.4."
+  "version": "1.0.1.0",
+  "changelog": "Release builds no longer embed the local project path."
 }
